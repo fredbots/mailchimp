@@ -56,6 +56,7 @@ defmodule Mailchimp.HTTPClient do
       def process_response_body(body), do:  _process_response_body(body)
   end
 
+  defp _process_response_body(body) when body == "", do: nil
   defp _process_response_body(body), do: Poison.decode!(body, keys: :atoms)
 
   @doc """
