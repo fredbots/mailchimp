@@ -81,8 +81,8 @@ defmodule Mailchimp.List do
     categories
   end
 
-  def create_member(%__MODULE__{links: %{"members" => %Link{href: href}}}, email_address, status, merge_fields \\ %{}, additional_data \\ %{})
-  when is_binary(email_address) and is_map(merge_fields) and status in [:subscribed, :pending, :unsubscribed, :cleaned] do
+  def create_member(%__MODULE__{links: %{"members" => %Link{href: href}}}, email_address, status, merge_fields, additional_data)
+  when is_binary(email_address) and is_map(merge_fields) and status in [:subscribed, :pending, :cleaned] do
     case HTTPClient.get(href) do
       {:ok, %Response{status_code: 200, body: body}} ->
         links = Link.get_links_from_attributes(body)
@@ -107,11 +107,41 @@ defmodule Mailchimp.List do
         {:error, error}
     end
   end
-
   def create_member!(list, email_address, status, merge_fields \\ %{}, additional_data \\ %{}) do
     {:ok, member} = create_member(list, email_address, status, merge_fields, additional_data)
     member
   end
+
+  def create_member_directly(href, email_address, status, merge_fields, additional_data)
+  when is_binary(email_address) and is_map(merge_fields) and status in [:subscribed, :pending, :cleaned] do
+    data = Map.merge(additional_data, %{email_address: email_address, status: status, merge_fields: merge_fields})
+
+    case HTTPClient.post(href, Poison.encode!(data)) do
+      {:ok, %Response{status_code: 200, body: body}} ->
+        {:ok, Member.new(body)}
+
+      {:ok, %Response{status_code: _, body: body}} ->
+        {:error, body}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+  def create_member_directly!(href, email_address, status, merge_fields \\ %{}, additional_data \\ %{}) do
+    {:ok, member} = create_member_directly(href, email_address, status, merge_fields, additional_data)
+    member
+  end
+
+  def delete_member(href, email_address) when is_binary(email_address) do
+    id = :crypto.hash(:md5, email_address |> String.downcase()) |> Base.encode16(case: :lower)
+    href = href <> "/" <> id
+    HTTPClient.delete(href)
+  end
+  def delete_member!(href, email_address) do
+    {:ok, member} = delete_member(href, email_address)
+    member
+  end
+
 
   defp md5(string) do
     :crypto.hash(:md5, string)
