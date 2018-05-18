@@ -37,8 +37,8 @@ defmodule Mailchimp.Mixfile do
   end
 
   defp deps do
-    [{:httpoison, "~> 1.0"},
-     {:poison, "~> 3.1"},
+    [{:httpoison, "~> 0.11"},
+     {:poison, "~> 2.2"},
      {:mock, "~> 0.2.0", only: :test},
      {:ex_doc, ">= 0.0.0", only: :dev}]
   end
